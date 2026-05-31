@@ -236,7 +236,9 @@ The canonical types and derivation helpers live in
 The runtime match state is managed by the store in
 [`src/stores/useMatchStore.ts`](src/stores/useMatchStore.ts), which holds the
 single reactive `sheet` and exposes the derived values plus the only mutations
-allowed (the actions that append events).
+allowed (the actions that append events). The store persists the sheet to
+`localStorage` (key `tchoukscorer:sheet:v1`) on every change and restores it on
+load, so a page refresh resumes the same match.
 
 ---
 

@@ -1,4 +1,4 @@
-import { reactive, computed } from 'vue';
+import { reactive, computed, watch } from 'vue';
 import {
   computeScores,
   currentPhase,
@@ -13,12 +13,41 @@ import type {
   TeamId,
 } from '../types';
 
+// Persist the whole sheet to localStorage so a refresh restores the match.
+// The key is versioned so a future format change can invalidate old data.
+const STORAGE_KEY = 'tchoukscorer:sheet:v1';
+
+const loadSheet = (): TchoukSheet => {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed?.teams) && Array.isArray(parsed?.events)) {
+        return { teams: parsed.teams, events: parsed.events };
+      }
+    }
+  } catch {
+    // Unavailable or corrupt storage — start fresh.
+  }
+  return { teams: [], events: [] };
+};
+
 // THE single source of truth: one sheet, holding only the teams and the event
 // log. Every other value below is *calculated* from `sheet.events`.
-const sheet = reactive<TchoukSheet>({
-  teams: [],
-  events: [],
-});
+const sheet = reactive<TchoukSheet>(loadSheet());
+
+// Save on every change to the single source of truth.
+watch(
+  sheet,
+  () => {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(sheet));
+    } catch {
+      // Storage full or unavailable — ignore; in-memory state still works.
+    }
+  },
+  { deep: true },
+);
 
 // Derived state — each of these recomputes whenever the one watched variable
 // (the sheet's event log) changes.
