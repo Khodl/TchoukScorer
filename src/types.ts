@@ -16,6 +16,14 @@ export interface TchoukTeam {
 /** A map of team id -> current score. */
 export type TchoukScores = Record<TeamId, number>;
 
+/**
+ * A participant in an event. Currently just the team, but modelled as an object
+ * so richer information (player id, name, position, …) can be added later.
+ */
+export interface ActorType {
+  teamId: TeamId;
+}
+
 /** A change to a team's score: which team, and by how much (+1 or -1). */
 export interface ScoreChangeType {
   teamId: TeamId;
@@ -37,16 +45,23 @@ export type TchoukEventType =
 export interface TchoukEvent {
   /** What happened. */
   type: TchoukEventType;
-  /** Team the event belongs to (null for match-wide events). */
-  teamId: TeamId | null;
-  /** Period the event occurred in. */
-  period: number;
+  /**
+   * Who performed the action: the shooter for `score_point_scored`, or the
+   * player/team who conceded for `score_point_given`. Omitted for
+   * `score_point_correction` (a cancelled point has no actor) and for the
+   * `time_*` events.
+   */
+  actor?: ActorType;
+  /**
+   * The team that receives the action: the team that benefits from the point
+   * (the scoring team, or the team given the point), or whose point is being
+   * cancelled. Set on every `score_*` event; omitted on the `time_*` events.
+   */
+  target?: ActorType;
+  /** For the `score_*` events: the team and signed delta that changed. */
+  scoreChange?: ScoreChangeType;
   /** ISO-8601 timestamp. */
   at: string;
-  /** For the `score_point_*` events: the team and delta that changed. */
-  scoreChange?: ScoreChangeType;
-  /** For `score_point_given`: opponent that conceded the point. */
-  givenBy?: TeamId;
 }
 
 /**
@@ -62,9 +77,9 @@ export interface TchoukSheet {
 }
 
 /**
- * Reconstruct the current score per team by folding the event log:
- * each score event applies its `scoreChange` delta. A reset empties the sheet
- * (clears `events`), so there is nothing to fold afterwards.
+ * Reconstruct the current score per team by folding the event log: each score
+ * event applies its `scoreChange` delta. A reset empties the sheet (clears
+ * `events`), so there is nothing to fold afterwards.
  */
 export function computeScores(events: TchoukEvent[]): TchoukScores {
   const scores: TchoukScores = {};
@@ -115,6 +130,19 @@ export function currentPhase(events: TchoukEvent[]): GamePhase {
 /** Current period number — how many periods have been started so far. */
 export function currentPeriod(events: TchoukEvent[]): number {
   return events.filter((event) => event.type === 'time_period_start').length;
+}
+
+/**
+ * The period a given event belongs to, derived from its position in the log:
+ * the number of `time_period_start` events up to and including it, or `null`
+ * if no period has started yet (the first period is `1`).
+ */
+export function eventPeriod(events: TchoukEvent[], index: number): number | null {
+  let count = 0;
+  for (let i = 0; i <= index && i < events.length; i++) {
+    if (events[i].type === 'time_period_start') count++;
+  }
+  return count === 0 ? null : count;
 }
 
 /**

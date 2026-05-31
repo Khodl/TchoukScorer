@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { useConfirm } from '../composables/useConfirm';
+import { eventPeriod } from '../types';
 import type { TchoukSheet, TchoukEvent, TchoukEventType, TeamId } from '../types';
 
 const props = defineProps<{
@@ -30,9 +31,15 @@ const teamNames = computed(() => {
 });
 
 // Most recent first, while keeping each event's real index in the log so we
-// can delete the right one.
+// can delete the right one. The period is derived from the event's position.
 const rows = computed(() =>
-  props.sheet.events.map((event, index) => ({ event, index })).reverse(),
+  props.sheet.events
+    .map((event, index) => ({
+      event,
+      index,
+      period: eventPeriod(props.sheet.events, index),
+    }))
+    .reverse(),
 );
 
 const isPointEvent = (event: TchoukEvent) => event.type.startsWith('score_');
@@ -50,21 +57,21 @@ const requestDelete = async (index: number, event: TchoukEvent) => {
   if (ok) emit('delete', index);
 };
 
-const teamName = (id: TeamId | null) =>
-  id === null ? '—' : teamNames.value.get(id) ?? String(id);
+const teamName = (id?: TeamId | null) =>
+  id == null ? '—' : teamNames.value.get(id) ?? String(id);
 
 const time = (iso: string) => new Date(iso).toLocaleTimeString();
 
-const detail = (event: TchoukEvent) => {
-  if (event.type === 'score_point_given' && event.givenBy != null) {
-    const delta = signed(event.scoreChange?.increment);
-    return `${delta} (by ${teamName(event.givenBy)})`;
-  }
-  if (event.scoreChange) return signed(event.scoreChange.increment);
-  return '—';
-};
+const signed = (n: number) => (n > 0 ? `+${n}` : `${n}`);
 
-const signed = (n?: number) => (n == null ? '' : n > 0 ? `+${n}` : `${n}`);
+const detail = (event: TchoukEvent) => {
+  if (!event.scoreChange) return '—';
+  const delta = signed(event.scoreChange.increment);
+  if (event.type === 'score_point_given' && event.actor) {
+    return `${delta} (by ${teamName(event.actor.teamId)})`;
+  }
+  return delta;
+};
 </script>
 
 <template>
@@ -84,12 +91,12 @@ const signed = (n?: number) => (n == null ? '' : n > 0 ? `+${n}` : `${n}`);
         </tr>
       </thead>
       <tbody>
-        <tr v-for="{ event, index } in rows" :key="index">
+        <tr v-for="{ event, index, period } in rows" :key="index">
           <td class="num">{{ index + 1 }}</td>
           <td class="time">{{ time(event.at) }}</td>
-          <td class="num">{{ event.period }}</td>
+          <td class="num">{{ period ?? '—' }}</td>
           <td>{{ EVENT_LABELS[event.type] }}</td>
-          <td>{{ teamName(event.teamId) }}</td>
+          <td>{{ teamName(event.target?.teamId) }}</td>
           <td class="detail">{{ detail(event) }}</td>
           <td class="actions">
             <button

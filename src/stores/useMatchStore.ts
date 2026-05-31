@@ -34,13 +34,10 @@ const lastActionAt = computed(() => {
 
 const recordEvent = (
   type: TchoukEventType,
-  teamId: TeamId | null,
   extra: Partial<TchoukEvent> = {},
 ) => {
   sheet.events.push({
     type,
-    teamId,
-    period: period.value,
     at: new Date().toISOString(),
     ...extra,
   });
@@ -54,16 +51,29 @@ const setTeams = (teams: TchoukTeam[]) => {
   sheet.teams = teams.map((t) => ({ id: t.id, name: t.name }));
 };
 
+// `teamId` is the team that benefits. With `givenBy`, an opponent conceded the
+// point: that opponent is the actor, the benefiting team is the target.
 const score = (teamId: TeamId, givenBy?: TeamId) => {
-  recordEvent(givenBy ? 'score_point_given' : 'score_point_scored', teamId, {
-    scoreChange: { teamId, increment: 1 },
-    ...(givenBy ? { givenBy } : {}),
-  });
+  if (givenBy != null) {
+    recordEvent('score_point_given', {
+      actor: { teamId: givenBy },
+      target: { teamId },
+      scoreChange: { teamId, increment: 1 },
+    });
+  } else {
+    recordEvent('score_point_scored', {
+      actor: { teamId },
+      target: { teamId },
+      scoreChange: { teamId, increment: 1 },
+    });
+  }
 };
 
+// A cancelled point has only a target (the team losing the point), no actor.
 const correct = (teamId: TeamId) => {
   if ((scores.value[teamId] ?? 0) > 0) {
-    recordEvent('score_point_correction', teamId, {
+    recordEvent('score_point_correction', {
+      target: { teamId },
       scoreChange: { teamId, increment: -1 },
     });
   }
@@ -71,10 +81,10 @@ const correct = (teamId: TeamId) => {
 
 // Time / phase transitions. The UI only surfaces the ones valid for the
 // current phase (see PeriodTracker), but the store stays agnostic.
-const startGame = () => recordEvent('time_game_start', null);
-const startPeriod = () => recordEvent('time_period_start', null);
-const endPeriod = () => recordEvent('time_period_end', null);
-const endMatch = () => recordEvent('time_game_end', null);
+const startGame = () => recordEvent('time_game_start');
+const startPeriod = () => recordEvent('time_period_start');
+const endPeriod = () => recordEvent('time_period_end');
+const endMatch = () => recordEvent('time_game_end');
 
 const reset = () => {
   sheet.events = [];

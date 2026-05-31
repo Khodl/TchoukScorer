@@ -46,36 +46,56 @@ sheet. This keeps the event log the single source of truth.
 
 A single recorded action.
 
-| Field         | Type                     | Required | Notes                                                            |
-| ------------- | ------------------------ | -------- | ---------------------------------------------------------------- |
-| `type`        | `TchoukEventType`        | yes      | What happened (see below).                                       |
-| `teamId`      | `TeamId \| null`         | yes      | Team the event belongs to; `null` for match-wide (time) events.  |
-| `period`      | `number`                 | yes      | Period the event occurred in (`0` before the first period).      |
-| `at`          | `string`                 | yes      | ISO-8601 timestamp, e.g. `"2026-05-31T14:02:31.000Z"`.           |
-| `scoreChange` | `ScoreChangeType`        | no       | Present on `score_point_*` events.                               |
-| `givenBy`     | `TeamId`                 | no       | Present on `score_point_given`: the opponent that conceded.      |
+| Field         | Type                | Required | Notes                                                                       |
+| ------------- | ------------------- | -------- | --------------------------------------------------------------------------- |
+| `type`        | `TchoukEventType`   | yes      | What happened (see below).                                                  |
+| `actor`       | `ActorType`         | no       | Who performed the action. Omitted on corrections and on `time_*` events.    |
+| `target`      | `ActorType`         | no       | The team that receives the action. Set on `score_*` events.                 |
+| `scoreChange` | `ScoreChangeType`   | no       | Present on `score_*` events: the team and signed delta.                     |
+| `at`          | `string`            | yes      | ISO-8601 timestamp, e.g. `"2026-05-31T14:02:31.000Z"`.                      |
+
+> The period an event belongs to is **not stored** — derive it from the log
+> (see §2): the number of `time_period_start` events up to and including it,
+> `null` before the first period (the first period is `1`).
+
+### `ActorType`
+
+A participant in an event. Modelled as an object so more information (player id,
+name, position, …) can be added later without changing the event shape.
+
+| Field    | Type     | Notes                       |
+| -------- | -------- | --------------------------- |
+| `teamId` | `TeamId` | The participant's team.     |
 
 ### `ScoreChangeType`
 
 | Field       | Type     | Notes                                               |
 | ----------- | -------- | --------------------------------------------------- |
-| `teamId`    | `TeamId` | Team whose score changed.                           |
+| `teamId`    | `TeamId` | Team whose score changed (same as `target.teamId`). |
 | `increment` | `number` | Signed delta: `+1` for a point, `-1` for a fix.     |
+
+### Actor / target semantics
+
+- **`actor`** is who *did* it — the shooter, or the player/team who conceded a
+  given point. A cancelled point (`score_point_correction`) has **no actor**.
+- **`target`** is the team that *receives* the action — the team that benefits
+  from the point (the scoring team, or the team given the point), or whose
+  point is being cancelled.
 
 ### `TchoukEventType`
 
-Two families: **time** events (the match timeline, `teamId` is `null`) and
-**score** events (carry a `scoreChange`).
+Two families: **time** events (the match timeline; no `actor`/`target`) and
+**score** events (carry `target` + `scoreChange`).
 
-| `type`                    | Family | Meaning                                         | Carries                          |
-| ------------------------- | ------ | ----------------------------------------------- | -------------------------------- |
-| `time_game_start`         | time   | The match started.                              | —                                |
-| `time_period_start`       | time   | A period started (increments the period count). | —                                |
-| `time_period_end`         | time   | The current period ended.                       | —                                |
-| `time_game_end`           | time   | The match ended.                                | —                                |
-| `score_point_scored`      | score  | A team scored for itself.                       | `scoreChange` (`+1`)             |
-| `score_point_given`       | score  | A team was given a point by an opponent.        | `scoreChange` (`+1`), `givenBy`  |
-| `score_point_correction`  | score  | Manual correction (undo a point).               | `scoreChange` (`-1`)             |
+| `type`                    | Family | Meaning                                         | `actor`            | `target`         | `scoreChange` |
+| ------------------------- | ------ | ----------------------------------------------- | ------------------ | ---------------- | ------------- |
+| `time_game_start`         | time   | The match started.                              | —                  | —                | —             |
+| `time_period_start`       | time   | A period started (increments the period count). | —                  | —                | —             |
+| `time_period_end`         | time   | The current period ended.                       | —                  | —                | —             |
+| `time_game_end`           | time   | The match ended.                                | —                  | —                | —             |
+| `score_point_scored`      | score  | A team scored for itself.                       | scoring team       | scoring team     | `+1`          |
+| `score_point_given`       | score  | A team was given a point by an opponent.        | conceding opponent | benefiting team  | `+1`          |
+| `score_point_correction`  | score  | Manual correction (cancel a point).             | — (none)           | team losing pt.  | `-1`          |
 
 ---
 
@@ -88,15 +108,18 @@ Two families: **time** events (the match timeline, `teamId` is `null`) and
     { "id": "suisse", "name": "Suisse" }
   ],
   "events": [
-    { "type": "time_game_start",   "teamId": null,    "period": 0, "at": "2026-05-31T14:02:11.000Z" },
-    { "type": "time_period_start", "teamId": null,    "period": 0, "at": "2026-05-31T14:02:14.000Z" },
-    { "type": "score_point_scored","teamId": "italy", "period": 1, "at": "2026-05-31T14:02:31.000Z",
+    { "type": "time_game_start",   "at": "2026-05-31T14:02:11.000Z" },
+    { "type": "time_period_start", "at": "2026-05-31T14:02:14.000Z" },
+    { "type": "score_point_scored", "at": "2026-05-31T14:02:31.000Z",
+      "actor": { "teamId": "italy" }, "target": { "teamId": "italy" },
       "scoreChange": { "teamId": "italy", "increment": 1 } },
-    { "type": "score_point_given", "teamId": "italy", "period": 1, "at": "2026-05-31T14:03:05.000Z",
-      "scoreChange": { "teamId": "italy", "increment": 1 }, "givenBy": "suisse" },
-    { "type": "score_point_correction", "teamId": "italy", "period": 1, "at": "2026-05-31T14:03:40.000Z",
+    { "type": "score_point_given", "at": "2026-05-31T14:03:05.000Z",
+      "actor": { "teamId": "suisse" }, "target": { "teamId": "italy" },
+      "scoreChange": { "teamId": "italy", "increment": 1 } },
+    { "type": "score_point_correction", "at": "2026-05-31T14:03:40.000Z",
+      "target": { "teamId": "italy" },
       "scoreChange": { "teamId": "italy", "increment": -1 } },
-    { "type": "time_period_end",   "teamId": null,    "period": 1, "at": "2026-05-31T14:14:00.000Z" }
+    { "type": "time_period_end",   "at": "2026-05-31T14:14:00.000Z" }
   ]
 }
 ```
@@ -129,6 +152,13 @@ for event in events:
 
 ```
 period = count(events where type == "time_period_start")
+```
+
+**An event's period** — the number of `time_period_start` events up to and
+including it (`null` if none yet; the first period is `1`):
+
+```
+eventPeriod(i) = count(events[0..i] where type == "time_period_start") or null
 ```
 
 **Start time** — the timestamp of the first `time_game_start` (or `null`):
@@ -177,14 +207,16 @@ A "reset" clears `events` entirely (the `teams` are kept).
 
 A backend accepting a sheet should verify:
 
-- `teams[].id` are unique; every `teamId` / `givenBy` / `scoreChange.teamId`
-  references an existing team (or is `null` where allowed).
+- `teams[].id` are unique; every `actor.teamId` / `target.teamId` /
+  `scoreChange.teamId` references an existing team.
 - `events` are ordered by non-decreasing `at`.
 - The sequence of `time_*` events is a valid walk of the state machine in §3.
-- `score_*` events occur only while the derived phase is `period_started`.
-- `score_point_scored` → `scoreChange.increment == 1`;
-  `score_point_given` → `increment == 1` **and** `givenBy` is set;
-  `score_point_correction` → `increment == -1`.
+- `score_*` events occur only while the derived phase is `period_started`, and
+  carry a `target` and a `scoreChange` whose `teamId` equals `target.teamId`.
+- `score_point_scored` → `actor` and `target` are the same team, `increment == 1`;
+  `score_point_given` → `actor` is the conceding opponent, `target` the
+  beneficiary, `increment == 1`;
+  `score_point_correction` → no `actor`, `increment == -1`.
 
 Because the sheet is an append-only log, a backend can store it as-is (e.g. a
 JSON column or an events table) and recompute any view on demand.
@@ -197,8 +229,9 @@ The canonical types and derivation helpers live in
 [`src/types.ts`](src/types.ts):
 
 - Types: `TchoukSheet`, `TchoukTeam`, `TchoukEvent`, `TchoukEventType`,
-  `ScoreChangeType`, `TeamId`, `GamePhase`.
-- Helpers: `computeScores`, `currentPhase`, `currentPeriod`, `gameStartedAt`.
+  `ActorType`, `ScoreChangeType`, `TeamId`, `GamePhase`.
+- Helpers: `computeScores`, `currentPhase`, `currentPeriod`, `eventPeriod`,
+  `gameStartedAt`.
 
 The runtime match state is managed by the store in
 [`src/stores/useMatchStore.ts`](src/stores/useMatchStore.ts), which holds the
