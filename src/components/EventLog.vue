@@ -35,6 +35,13 @@ const rows = computed(() =>
   props.sheet.events.map((event, index) => ({ event, index })).reverse(),
 );
 
+const isPointEvent = (event: TchoukEvent) => event.type.startsWith('score_');
+
+// Point events can always be deleted. Time/phase events form the match
+// timeline, so only the most recent one (the last log) may be removed.
+const canDelete = (event: TchoukEvent, index: number) =>
+  isPointEvent(event) || index === props.sheet.events.length - 1;
+
 const requestDelete = async (index: number, event: TchoukEvent) => {
   const ok = await confirm(`Delete event "${EVENT_LABELS[event.type]}"?`, {
     confirmLabel: 'Delete',
@@ -86,6 +93,7 @@ const signed = (n?: number) => (n == null ? '' : n > 0 ? `+${n}` : `${n}`);
           <td class="detail">{{ detail(event) }}</td>
           <td class="actions">
             <button
+              v-if="canDelete(event, index)"
               class="delete"
               title="Delete event"
               aria-label="Delete event"
