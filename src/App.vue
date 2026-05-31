@@ -2,14 +2,14 @@
 import { ref, onMounted, onBeforeUnmount } from 'vue';
 import TchoukScore from './components/TchoukScore.vue';
 import ConfirmDialog from './components/ConfirmDialog.vue';
-import type { TchoukTeam, TchoukSheet } from './types';
+import type { TchoukTeam, GameSheet } from './types';
 
 const teams: TchoukTeam[] = [
   { id: 'italy', name: 'Italy' },
   { id: 'switzerland-m15-bejune', name: 'Switzerland M15 BEJUNE' },
 ];
 
-const lastEvent = ref<TchoukSheet | null>(null);
+const lastEvent = ref<GameSheet | null>(null);
 const isOnline = ref(navigator.onLine);
 const transientMessage = ref<string | null>(null);
 let messageTimer: ReturnType<typeof setTimeout> | undefined;
@@ -39,7 +39,7 @@ onBeforeUnmount(() => {
   clearTimeout(messageTimer);
 });
 
-const onGameEventChange = (data: TchoukSheet) => {
+const onGameEventChange = (data: GameSheet) => {
   lastEvent.value = data;
   console.log('game-event-change', data);
 };
@@ -59,7 +59,7 @@ const onGameEventChange = (data: TchoukSheet) => {
     </div>
   </Transition>
   <main>
-    <h1>Tchouk Scorer</h1>
+    <h1>Game Center</h1>
     <TchoukScore
       :teams="teams"
       @game-event-change="onGameEventChange"

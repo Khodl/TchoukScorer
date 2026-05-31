@@ -6,14 +6,14 @@ import LastActionTimer from './LastActionTimer.vue';
 import Scoreboard from './Scoreboard.vue';
 import EventLog from './EventLog.vue';
 import { useMatchStore } from '../stores/useMatchStore';
-import type { TchoukTeam, TchoukSheet } from '../types';
+import type { TchoukTeam, GameSheet } from '../types';
 
 const props = defineProps<{
   teams: TchoukTeam[];
 }>();
 
 const emit = defineEmits<{
-  'game-event-change': [data: TchoukSheet];
+  'game-event-change': [data: GameSheet];
 }>();
 
 // All match state and calculations live in the store; this component is just

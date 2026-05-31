@@ -2,10 +2,10 @@
 import { computed } from 'vue';
 import { useConfirm } from '../composables/useConfirm';
 import { eventPeriod } from '../types';
-import type { TchoukSheet, TchoukEvent, TchoukEventType, TeamId } from '../types';
+import type { GameSheet, TchoukEvent, TchoukEventType, TeamId } from '../types';
 
 const props = defineProps<{
-  sheet: TchoukSheet;
+  sheet: GameSheet;
 }>();
 
 const emit = defineEmits<{

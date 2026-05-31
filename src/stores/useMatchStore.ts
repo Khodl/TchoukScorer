@@ -6,7 +6,7 @@ import {
   gameStartedAt,
 } from '../types';
 import type {
-  TchoukSheet,
+  GameSheet,
   TchoukTeam,
   TchoukEvent,
   TchoukEventType,
@@ -17,7 +17,7 @@ import type {
 // The key is versioned so a future format change can invalidate old data.
 const STORAGE_KEY = 'tchoukscorer:sheet:v1';
 
-const loadSheet = (): TchoukSheet => {
+const loadSheet = (): GameSheet => {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
@@ -34,7 +34,7 @@ const loadSheet = (): TchoukSheet => {
 
 // THE single source of truth: one sheet, holding only the teams and the event
 // log. Every other value below is *calculated* from `sheet.events`.
-const sheet = reactive<TchoukSheet>(loadSheet());
+const sheet = reactive<GameSheet>(loadSheet());
 
 // Save on every change to the single source of truth.
 watch(

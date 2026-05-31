@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { computeScores } from '../types';
-import type { TchoukSheet } from '../types';
+import type { GameSheet } from '../types';
 
 const props = defineProps<{
-  sheet: TchoukSheet;
+  sheet: GameSheet;
 }>();
 
 const scores = computed(() => computeScores(props.sheet.events));

@@ -1,8 +1,8 @@
 // Shared type definitions for the scorer.
 //
-// `TchoukSheet` is the canonical record of a match. It is exactly the shape
-// emitted by TchoukScore's `game-event-change` event (its `matchData`), so a
-// sheet can be fed straight from that event into the <Sheet> component.
+// `GameSheet` is the canonical record of a match. It is exactly the shape
+// emitted by TchoukScore's `game-event-change` event, so a sheet can be fed
+// straight from that event into the scoreboard / event-log components.
 
 /** Stable identifier for a team. */
 export type TeamId = string | number;
@@ -14,7 +14,7 @@ export interface TchoukTeam {
 }
 
 /** A map of team id -> current score. */
-export type TchoukScores = Record<TeamId, number>;
+export type TchoukScoresType = Record<TeamId, number>;
 
 /**
  * A participant in an event. Currently just the team, but modelled as an object
@@ -69,7 +69,7 @@ export interface TchoukEvent {
  * Only the teams and the event log are stored; everything else (scores, current
  * period, start time) is derived from `events`.
  */
-export interface TchoukSheet {
+export interface GameSheet {
   /** Teams in the match. */
   teams: TchoukTeam[];
   /** Chronological log of every recorded event. */
@@ -81,8 +81,8 @@ export interface TchoukSheet {
  * event applies its `scoreChange` delta. A reset empties the sheet (clears
  * `events`), so there is nothing to fold afterwards.
  */
-export function computeScores(events: TchoukEvent[]): TchoukScores {
-  const scores: TchoukScores = {};
+export function computeScores(events: TchoukEvent[]): TchoukScoresType {
+  const scores: TchoukScoresType = {};
   for (const event of events) {
     if (event.scoreChange) {
       const { teamId, increment } = event.scoreChange;

@@ -1,15 +1,15 @@
-# Tchouk Scorer
+# Game Center
 
 An offline-first tchoukball scoreboard (Vue 3 + Vite PWA).
 
-The app records a match as a **`TchoukSheet`** — an append-only event log. This
-document specifies the `TchoukSheet` JSON format so it can be used as a shared
+The app records a match as a **`GameSheet`** — an append-only event log. This
+document specifies the `GameSheet` JSON format so it can be used as a shared
 standard between the frontend, the backend, and any other app that produces or
 consumes match data.
 
 ---
 
-## The `TchoukSheet` format
+## The `GameSheet` format
 
 A sheet stores **only two things**: the teams and the chronological event log.
 Everything else a UI might show — current scores, the period number, the match
@@ -28,7 +28,7 @@ sheet. This keeps the event log the single source of truth.
 }
 ```
 
-### `TchoukSheet`
+### `GameSheet`
 
 | Field    | Type            | Notes                                              |
 | -------- | --------------- | -------------------------------------------------- |
@@ -228,7 +228,7 @@ JSON column or an events table) and recompute any view on demand.
 The canonical types and derivation helpers live in
 [`src/types.ts`](src/types.ts):
 
-- Types: `TchoukSheet`, `TchoukTeam`, `TchoukEvent`, `TchoukEventType`,
+- Types: `GameSheet`, `TchoukTeam`, `TchoukEvent`, `TchoukEventType`,
   `ActorType`, `ScoreChangeType`, `TeamId`, `GamePhase`.
 - Helpers: `computeScores`, `currentPhase`, `currentPeriod`, `eventPeriod`,
   `gameStartedAt`.

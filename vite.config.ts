@@ -9,8 +9,8 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.ico'],
       manifest: {
-        name: 'Tchouk Scorer',
-        short_name: 'Tchouk',
+        name: 'Game Center',
+        short_name: 'Game Center',
         description: 'Offline tchoukball scoreboard',
         theme_color: '#0f172a',
         background_color: '#0f172a',
