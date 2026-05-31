@@ -51,15 +51,12 @@ export interface TchoukEvent {
 
 /**
  * A full match sheet — the same object the scoreboard publishes on every change.
- * Scores are not stored here; derive them from `events` with {@link computeScores}.
+ * Only the teams and the event log are stored; everything else (scores, current
+ * period, start time) is derived from `events`.
  */
 export interface TchoukSheet {
   /** Teams in the match. */
   teams: TchoukTeam[];
-  /** Current period (0 = not started). */
-  period: number;
-  /** ISO-8601 timestamp of when the match started. */
-  startedAt: string;
   /** Chronological log of every recorded event. */
   events: TchoukEvent[];
 }
@@ -118,4 +115,12 @@ export function currentPhase(events: TchoukEvent[]): GamePhase {
 /** Current period number — how many periods have been started so far. */
 export function currentPeriod(events: TchoukEvent[]): number {
   return events.filter((event) => event.type === 'time_period_start').length;
+}
+
+/**
+ * When the match started — the timestamp of the `time_game_start` event,
+ * or null if the game has not started yet.
+ */
+export function gameStartedAt(events: TchoukEvent[]): string | null {
+  return events.find((event) => event.type === 'time_game_start')?.at ?? null;
 }
