@@ -38,15 +38,16 @@ const requestDecrement = async () => {
     <button class="big-plus" @click="emit('score', id)" :disabled="disabled">+1</button>
     <h2>{{ name }}</h2>
     <div v-if="opponents.length" class="opponents">
-      <h3>Given point by</h3>
       <ul class="opponent-rows">
         <li v-for="opponent in opponents" :key="opponent.id">
-          <span class="opponent-name">{{ opponent.name }}</span>
           <button
             class="plus-one"
             @click="emit('score', id, opponent.id)"
             :disabled="disabled"
-          >+1</button>
+          >
+            <span class="given-label">Given point by</span>
+            <span class="given-name">{{ opponent.name }}</span>
+          </button>
         </li>
       </ul>
     </div>
@@ -106,14 +107,6 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
   padding-top: 1rem;
   border-top: 1px solid #334155;
 }
-.opponents h3 {
-  margin: 0 0 0.5rem;
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: #64748b;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-}
 .opponent-rows {
   list-style: none;
   padding: 0;
@@ -122,29 +115,28 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
   flex-direction: column;
   gap: 0.4rem;
 }
-.opponent-rows li {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.5rem;
-  background: #0f172a;
-  border: 1px solid #334155;
-  border-radius: 8px;
-  padding: 0.4rem 0.4rem 0.4rem 0.75rem;
-}
-.opponent-name {
-  font-size: 0.9rem;
-  color: #cbd5e1;
-  text-align: left;
-}
 .plus-one {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
   background: #0ea5e9;
   border-color: #0284c7;
   color: #f0f9ff;
-  padding: 0.3rem 0.7rem;
-  font-size: 0.85rem;
+  padding: 0.5rem 0.7rem;
 }
-.plus-one:hover { background: #0284c7; }
+.plus-one:hover:not(:disabled) { background: #0284c7; }
+.given-label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  opacity: 0.85;
+}
+.given-name {
+  font-size: 0.95rem;
+  font-weight: 700;
+}
 .undo {
   margin-top: 1.5rem;
   width: 100%;
