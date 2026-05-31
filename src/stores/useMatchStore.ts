@@ -46,6 +46,10 @@ const recordEvent = (
   });
 };
 
+const removeEvent = (index: number) => {
+  if (index >= 0 && index < sheet.events.length) sheet.events.splice(index, 1);
+};
+
 const setTeams = (teams: TchoukTeam[]) => {
   sheet.teams = teams.map((t) => ({ id: t.id, name: t.name }));
 };
@@ -91,6 +95,7 @@ export function useMatchStore() {
     setTeams,
     score,
     correct,
+    removeEvent,
     startGame,
     startPeriod,
     endPeriod,

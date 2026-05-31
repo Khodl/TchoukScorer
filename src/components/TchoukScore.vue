@@ -4,6 +4,7 @@ import TeamColumn from './TeamColumn.vue';
 import PeriodTracker from './PeriodTracker.vue';
 import LastActionTimer from './LastActionTimer.vue';
 import Scoreboard from './Scoreboard.vue';
+import EventLog from './EventLog.vue';
 import { useMatchStore } from '../stores/useMatchStore';
 import type { TchoukTeam, TchoukSheet } from '../types';
 
@@ -69,6 +70,7 @@ watch(
     />
   </div>
   <button class="reset" @click="store.reset" :disabled="!sheet.events.length">Reset</button>
+  <EventLog :sheet="sheet" @delete="store.removeEvent" />
 </template>
 
 <style scoped>
